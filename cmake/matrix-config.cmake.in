@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+set(config_targets_file_matrix @config_targets_file@)
+
+include(CMakeFindDependencyMacro)
+
+#find_dependency(leaf CONFIG)
+#find_dependency(flavor CONFIG)
+
+include("${CMAKE_CURRENT_LIST_DIR}/${config_targets_file_matrix}")
+
+check_required_components(matrix)
