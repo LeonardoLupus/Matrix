@@ -35,7 +35,8 @@ namespace compare {
 
     template<concepttypes::FPType T>
     auto fp(T a, T b) -> int {
-        if(std::fabs(a - b) <= std::numeric_limits<T>::epsilon()) {return 0;}
+        constexpr auto epsilon = 1.0e-14;   //std::numeric_limits<T>::epsilon()
+        if(std::fabs(a - b) <= epsilon) {return 0;}
         if(a - b > 0) {return 1;}
         return -1;
     }
@@ -54,9 +55,9 @@ public:
     template<concepttypes::NumberType Tto>
     auto cast_copy() const -> Matrix<Tto>;
 
-    auto identity_matrix() -> void;
+    auto identity_matrix() -> Matrix<T>&;
 
-    auto fill(T data) -> void;
+    auto fill(T data) -> Matrix<T>&;
 
 
     auto operator=(const Matrix<T>& other) -> Matrix<T>&;
@@ -70,11 +71,14 @@ public:
     template<concepttypes::NumberType OtherT>
     auto operator*(const Matrix<OtherT>& m) const -> decltype(auto);
 
+    template<concepttypes::NumberType OtherT>
+    friend auto operator==(const Matrix<OtherT>& first, const Matrix<OtherT>& second) -> bool;
+
     template<concepttypes::NumberType TNum>
     [[maybe_unused]] auto multiply(TNum number) -> Matrix<T>;
 
     template<concepttypes::NumberType TNum>
-    auto division(TNum number) -> Matrix<T>;
+    [[maybe_unused]] auto division(TNum number) -> Matrix<T>;
 
 
     auto at(size_t x, size_t y) -> T&;
@@ -94,7 +98,7 @@ public:
     auto print() const -> void;
 
 
-    auto transposition() -> void;
+    auto transposition() -> Matrix<T>&;
     [[nodiscard]] auto t() const -> Matrix<T>;
     [[nodiscard]] auto det() const -> double;
     [[nodiscard]] auto minor(size_t x, size_t y) const -> Matrix<T>;
@@ -109,6 +113,7 @@ private:
     size_t m_row;
     bool m_transposition{};
 };
+
 
 template<concepttypes::NumberType T>
 template<concepttypes::NumberType Tto>
@@ -177,7 +182,7 @@ Matrix<T>::Matrix(std::vector<T> m, const size_t column, const size_t row) :
 }
 
 template<concepttypes::NumberType T>
-auto Matrix<T>::identity_matrix() -> void {
+auto Matrix<T>::identity_matrix() -> Matrix<T>& {
     is_correct_to_sq_use();
     for (size_t i = 0; i < m_row; ++i) {
         for (size_t j = 0; j < m_col; ++j) {
@@ -186,13 +191,15 @@ auto Matrix<T>::identity_matrix() -> void {
         }
     }
     m_transposition = false;
+    return *this;
 }
 
 template<concepttypes::NumberType T>
-auto Matrix<T>::fill(T data) -> void {
+auto Matrix<T>::fill(T data) -> Matrix<T>& {
     for (auto &i : m_matrix) {
         i = data;
     }
+    return *this;
 }
 
 
@@ -268,11 +275,29 @@ auto Matrix<T>::operator*(const Matrix<OtherT> &m) const -> decltype(auto) {
     return matrix;
 }
 
+template<concepttypes::NumberType OtherT>
+auto operator==(const Matrix<OtherT> &first, const Matrix<OtherT> &second) -> bool {
+    if (first.number_col() != second.number_col() || first.number_row() != second.number_row()) {
+        return false;
+    }
+    for (size_t i = 0; i < first.number_row(); ++i) {
+        for (size_t j = 0; j < first.number_col(); ++j) {
+            auto a = static_cast<double>(first.at(j, i));
+            auto b = static_cast<double>(second.at(j, i));
+            if (compare::fp(a, b) != 0) {return false;}
+        }
+    }
+    return true;
+}
+
 template<concepttypes::NumberType T>
 template<concepttypes::NumberType TNum>
 [[maybe_unused]] auto Matrix<T>::multiply(TNum number) -> Matrix<T> {
     for (auto &i : m_matrix) {
         i *= number;
+        if (auto _ = compare::fp(i, 0.); _ == 0) {
+            i = 0;
+        }
     }
     return *this;
 }
@@ -282,6 +307,9 @@ template<concepttypes::NumberType TNum>
 auto Matrix<T>::division(TNum number) -> Matrix<T> {
     for (auto &i : m_matrix) {
         i /= number;
+        if (auto _ = compare::fp(i, 0.); _ == 0) {
+            i = 0;
+        }
     }
     return *this;
 }
@@ -390,7 +418,7 @@ auto Matrix<T>::is_valid_index(const size_t column, const size_t row) const -> v
 
 template<concepttypes::NumberType T>
 auto Matrix<T>::is_correct_to_sq_use() const -> void {
-    if (is_empty() || !is_square()) {
+    if (is_empty() || (!is_square())) {
         std::cout << "\nERROR! Attempt to call a method on a non-square or empty matrix\n";
         exit(-1);
     }
@@ -399,10 +427,11 @@ auto Matrix<T>::is_correct_to_sq_use() const -> void {
 
 
 template<concepttypes::NumberType T>
-auto Matrix<T>::transposition() -> void {
-    if (m_matrix.size() < 2) {return;}
+auto Matrix<T>::transposition() -> Matrix<T>& {
+    if (m_matrix.size() < 2) {return *this;}
     m_transposition = not m_transposition;
     std::swap(m_col, m_row);
+    return *this;
 }
 
 template<concepttypes::NumberType T>
@@ -413,15 +442,19 @@ auto Matrix<T>::t() const -> Matrix<T> {
 }
 
 template<concepttypes::NumberType T>
-auto det_2x2(const Matrix<T>& m) -> T {
-    return m.at(0, 0)*m.at(1, 1) - m.at(0,1)*m.at(1, 0);
+auto det_2x2(const Matrix<T>& m) -> double {
+    double det = m.at(0, 0)*m.at(1, 1) - m.at(0,1)*m.at(1, 0);
+    if (compare::fp(det, 0.) == 0) {det = 0;}
+    return det;
 }
 
 template<concepttypes::NumberType T>
-auto det_3x3(const Matrix<T>& m) -> T {
-    return m.at(0, 0) * (m.at(1, 1)*m.at(2, 2) - m.at(1, 2)*m.at(2, 1)) -
+auto det_3x3(const Matrix<T>& m) -> double {
+    double det = m.at(0, 0) * (m.at(1, 1)*m.at(2, 2) - m.at(1, 2)*m.at(2, 1)) -
             m.at(0, 1) * (m.at(1, 0)*m.at(2, 2) - m.at(1, 2)*m.at(2, 0)) +
             m.at(0, 2) * (m.at(1, 0)*m.at(2, 1) - m.at(1, 1)*m.at(2, 0));
+    if (compare::fp(det, 0.) == 0) {det = 0;}
+    return det;
 }
 
 template<concepttypes::NumberType T>
@@ -490,9 +523,10 @@ auto Matrix<T>::minor(size_t x, size_t y) const -> Matrix<T> {
 template<concepttypes::NumberType T>
 auto Matrix<T>::inverse() const -> Matrix<double> {
     is_correct_to_sq_use();
+    if(m_col == 1) {return Matrix<T>({{1/at(0,0)}});}
     Matrix<double> buffer(m_col, m_row);
     auto d = det();
-    if (std::is_eq(d <=> 0)) {return buffer;}
+    if (compare::fp(d, 0.) == 0) {return buffer;}
     for (size_t i = 0; i < m_row; ++i) {
         for (size_t j = 0; j < m_col; ++j) {
             buffer.at(j, i) = minor(j, i).det() * ((j+i)%2==0?1:-1);
@@ -509,6 +543,11 @@ namespace matrix {
     template<concepttypes::NumberType TEquation, concepttypes::NumberType TFree>
     auto solve_SLAE(const Matrix<TEquation>& equation, const Matrix<TFree>& free_members) -> Matrix<double> {
         return equation.inverse() * free_members.template cast_copy<double>();
+    }
+
+    template <concepttypes::NumberType T>
+    auto identity_matrix(size_t rank) -> Matrix<T> {
+        return Matrix<T>(rank, rank).identity_matrix();
     }
 }
 
