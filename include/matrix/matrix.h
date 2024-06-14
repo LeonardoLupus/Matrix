@@ -74,8 +74,9 @@ public:
     template<concepttypes::NumberType OtherT>
     friend auto operator==(const Matrix<OtherT>& first, const Matrix<OtherT>& second) -> bool;
 
+
     template<concepttypes::NumberType TNum>
-    [[maybe_unused]] auto multiply(TNum number) -> Matrix<T>;
+    [[maybe_unused]] auto multiplication(TNum number) -> Matrix<T>;
 
     template<concepttypes::NumberType TNum>
     [[maybe_unused]] auto division(TNum number) -> Matrix<T>;
@@ -113,6 +114,7 @@ private:
     size_t m_row;
     bool m_transposition{};
 };
+
 
 
 template<concepttypes::NumberType T>
@@ -292,26 +294,28 @@ auto operator==(const Matrix<OtherT> &first, const Matrix<OtherT> &second) -> bo
 
 template<concepttypes::NumberType T>
 template<concepttypes::NumberType TNum>
-[[maybe_unused]] auto Matrix<T>::multiply(TNum number) -> Matrix<T> {
-    for (auto &i : m_matrix) {
+[[maybe_unused]] auto Matrix<T>::multiplication(TNum number) -> Matrix<T>{
+    auto buffer = *this;
+    for (auto &i : buffer.m_matrix) {
         i *= number;
         if (auto _ = compare::fp(i, 0.); _ == 0) {
             i = 0;
         }
     }
-    return *this;
+    return buffer;
 }
 
 template<concepttypes::NumberType T>
 template<concepttypes::NumberType TNum>
 auto Matrix<T>::division(TNum number) -> Matrix<T> {
-    for (auto &i : m_matrix) {
+    auto buffer = *this;
+    for (auto &i : buffer.m_matrix) {
         i /= number;
         if (auto _ = compare::fp(i, 0.); _ == 0) {
             i = 0;
         }
     }
-    return *this;
+    return buffer;
 }
 
 
@@ -504,7 +508,7 @@ template<concepttypes::NumberType T>
 auto Matrix<T>::minor(size_t x, size_t y) const -> Matrix<T> {
     is_valid_index(x, y);
     Matrix<T> buffer;
-    if(m_col == 1 || m_row == 1) {return buffer;}
+    if(m_col <= 1 || m_row <= 1) {return buffer;}
     buffer.resize(m_col-1, m_row-1);
     for (size_t i = 0; i < m_row; ++i) {
         for (size_t j = 0; j < m_col; ++j) {
@@ -524,16 +528,17 @@ template<concepttypes::NumberType T>
 auto Matrix<T>::inverse() const -> Matrix<double> {
     is_correct_to_sq_use();
     if(m_col == 1) {return Matrix<T>({{1/at(0,0)}});}
-    Matrix<double> buffer(m_col, m_row);
+    Matrix<double> buffer;
     auto d = det();
     if (compare::fp(d, 0.) == 0) {return buffer;}
+    buffer.resize(m_col, m_row);
     for (size_t i = 0; i < m_row; ++i) {
         for (size_t j = 0; j < m_col; ++j) {
             buffer.at(j, i) = minor(j, i).det() * ((j+i)%2==0?1:-1);
         }
     }
     buffer.transposition();
-    buffer.division(d);
+    buffer = buffer.division(d);
     return buffer;
 }
 

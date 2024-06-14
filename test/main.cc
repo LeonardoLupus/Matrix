@@ -124,8 +124,8 @@ TEST(TestOperators, MultiplyOperatorsMatrix) {
 
     Matrix s = a * b;
     Matrix t = c * d;
-    Matrix y = e * f;
     Matrix x = j * h;
+    Matrix y = e * f;
     Matrix z = k * l;
 
     ASSERT_DOUBLE_EQ(s.at(0, 0), 8);
@@ -134,6 +134,8 @@ TEST(TestOperators, MultiplyOperatorsMatrix) {
     ASSERT_DOUBLE_EQ(s.at(1, 1), 29);
 
     ASSERT_DOUBLE_EQ(t.at(0, 0), 5);
+
+    ASSERT_DOUBLE_EQ(x.at(0, 0), 8.4);
 
     ASSERT_DOUBLE_EQ(y.at(0, 0), 8.4);
     ASSERT_DOUBLE_EQ(y.at(1, 0), 14);
@@ -144,8 +146,6 @@ TEST(TestOperators, MultiplyOperatorsMatrix) {
     ASSERT_DOUBLE_EQ(y.at(0, 2), 25.2);
     ASSERT_DOUBLE_EQ(y.at(1, 2), 48);
     ASSERT_DOUBLE_EQ(y.at(2, 2), 53);
-
-    ASSERT_DOUBLE_EQ(x.at(0, 0), 8.4);
 
     ASSERT_DOUBLE_EQ(z.at(0, 0), 9);
     ASSERT_DOUBLE_EQ(z.at(1, 0), 8);
