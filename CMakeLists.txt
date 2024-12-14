@@ -3,11 +3,11 @@ cmake_minimum_required(VERSION 3.15)
 include_guard(GLOBAL)
 
 project(matrix
-        VERSION 0.0.1
+        VERSION 0.1.0
         DESCRIPTION "Lib to matrix operations"
         LANGUAGES CXX)
 
-option(STANDALONE "Build dev executable (testing only)" ON)
+option(STANDALONE_matrix "Build dev executable (testing only)" ON)
 
 if(NOT CMAKE_CXX_STANDARD)
     message(STATUS "[${PROJECT_NAME}] setting c++ standard to c++20")
@@ -75,9 +75,9 @@ install(FILES ${PROJECT_CONFIG_FILE} ${CONFIG_VERSION_FILE} DESTINATION ${INSTAL
 
 message(STATUS "[${PROJECT_NAME}] configuring ${PROJECT_NAME} done!")
 
-if(STANDALONE)
+if(STANDALONE_matrix)
     message(STATUS "[${PROJECT_NAME}] building test executable for developers")
     add_subdirectory(test)
 endif()
 
-unset(STANDALONE CACHE)
+unset(STANDALONE_matrix CACHE)
