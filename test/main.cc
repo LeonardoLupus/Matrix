@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -162,8 +163,8 @@ TEST(TestOperators, MultiplyOperatorsMatrix) {
 TEST(TestOperators, TranspositionMatrix) {
     Matrix <int> d ({100, 200, 300, 400}, 2, 2);
     Matrix <double> e ({1.5, -2, -3.5, 0}, 1, 4);
-  d.transpose();
-  e.transpose();
+    d.transpose();
+    e.transpose();
 
     ASSERT_DOUBLE_EQ(d.at(0, 0), 100);
     ASSERT_DOUBLE_EQ(d.at(1, 0), 300);
@@ -221,6 +222,21 @@ TEST(TestInverse, InverseMatrix) {
 auto main() -> int {
 
     ::testing::InitGoogleTest();
+
+    Matrix <double> test_file ({1, 2, 3, 4, 5, 6}, 3, 2);
+    Matrix <double> in_matrix (3, 2);
+
+    std::ofstream fout;
+    fout.open("matrix_file.txt");
+    fout << test_file;
+    fout.close();
+
+    std::ifstream fin;
+    fin.open("matrix_file.txt");
+    fin >> in_matrix;
+    fin.close();
+
+    std::cout << in_matrix;
 
     return RUN_ALL_TESTS();
 }

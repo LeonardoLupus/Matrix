@@ -140,13 +140,16 @@ public:
     auto swap_line(size_t i, size_t j) -> void;
 
     auto transpose() -> Matrix<T>&;
-    [[nodiscard]] auto transposed() const -> Matrix<T>;
+    [[nodiscard]] auto Tr() const -> Matrix<T>;
     [[nodiscard]] auto det() const -> double;
     [[nodiscard]] auto minor(size_t x, size_t y) const -> Matrix<T>;
     [[nodiscard]] auto inverse() const -> Matrix<double>;
 
     template <detail::Number U>
     friend auto operator<<(std::ostream& os, const Matrix<U>& m) -> std::ostream&;
+
+    template <detail::Number U>
+    friend auto operator>>(std::istream& is, Matrix<U>& m) -> std::istream&;
 
 private:
     auto is_valid_index(size_t column, size_t row) const -> void;
@@ -160,13 +163,39 @@ private:
 
 template <detail::Number U>
 auto operator<<(std::ostream& os, Matrix<U> const& m) -> std::ostream& {
-  os << std::endl;
   for(int i = 0; i < m.m_row; ++i) {
     for(int j = 0; j < m.m_col; ++j)
-      os << m.at(j, i) << "\t";
+      os << "\t" << m.at(j, i);
     os << std::endl;
   }
   return os;
+}
+
+template <detail::Number U>
+auto operator>>(std::istream& is, Matrix<U>& m) -> std::istream& {
+    auto value = m.at(0, 0);
+    auto i = 0;
+    auto j = 0;
+    while (j < m.number_row()) {
+        is >> value;
+        if (i >= m.number_col()) {
+            throw std::runtime_error("Error! The format of the matrix in the file does not match the transmitted matrix!");
+            break;
+        }
+        m.at(i, j) = value;
+        ++i;
+        if (is.peek() == '\n') {
+            if (i != m.number_col()) {
+                throw std::runtime_error("Error! The format of the matrix in the file does not match the transmitted matrix!");
+                break;
+            }
+            i = 0;
+            ++j;
+            continue;
+        }
+    }
+    
+    return is;
 }
 
 template<detail::Number T>
@@ -423,9 +452,9 @@ auto Matrix<T>::transpose() -> Matrix<T>& {
 }
 
 template<detail::Number T>
-auto Matrix<T>::transposed() const -> Matrix<T> {
+auto Matrix<T>::Tr() const -> Matrix<T> {
     Matrix matrix = *this;
-  matrix.transpose();
+    matrix.transpose();
     return matrix;
 }
 
@@ -515,7 +544,7 @@ auto Matrix<T>::minor(size_t x, size_t y) const -> Matrix<T> {
 template<detail::Number T>
 auto Matrix<T>::inverse() const -> Matrix<double> {
     is_correct_to_sq_use();
-    if(m_col == 1) {return Matrix<T>({{1/at(0,0)}});}
+    if(m_col == 1) {return Matrix<T>{{1/at(0,0)}, 1, 1};}
     Matrix<double> buffer;
     auto d = det();
     if (detail::is_null(d))
@@ -544,5 +573,3 @@ namespace matrix {
         return Matrix<T>(rank, rank).identity_matrix();
     }
 }
-
-
